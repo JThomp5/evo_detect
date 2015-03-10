@@ -1,0 +1,39 @@
+/usr/bin/g++-4.9 main.cc file_handler.cc -L../../MyLibraries/Params -lParams -L../../MyLibraries/Files -lfiles -o val_evo -g -Wall -std=c++11
+main.cc: In function ‘int main(int, char**)’:
+main.cc:56:21: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for ( int t = 0; t < to_add.size(); t++ ){
+                     ^
+file_handler.cc: In function ‘std::vector<std::unique_ptr<iset<str_com> > > load_rpi_evo_file(const string&, std::vector<std::vector<std::pair<int, int> > >&)’:
+file_handler.cc:61:25: error: no matching function for call to ‘std::vector<std::vector<std::pair<int, int> > >::push_back()’
+    evolutions.push_back();
+                         ^
+file_handler.cc:61:25: note: candidates are:
+In file included from /usr/include/c++/4.9/vector:64:0,
+                 from ../../MyLibraries/Params/Parameters.h:10,
+                 from file_handler.h:7,
+                 from file_handler.cc:1:
+/usr/include/c++/4.9/bits/stl_vector.h:913:7: note: void std::vector<_Tp, _Alloc>::push_back(const value_type&) [with _Tp = std::vector<std::pair<int, int> >; _Alloc = std::allocator<std::vector<std::pair<int, int> > >; std::vector<_Tp, _Alloc>::value_type = std::vector<std::pair<int, int> >]
+       push_back(const value_type& __x)
+       ^
+/usr/include/c++/4.9/bits/stl_vector.h:913:7: note:   candidate expects 1 argument, 0 provided
+/usr/include/c++/4.9/bits/stl_vector.h:931:7: note: void std::vector<_Tp, _Alloc>::push_back(std::vector<_Tp, _Alloc>::value_type&&) [with _Tp = std::vector<std::pair<int, int> >; _Alloc = std::allocator<std::vector<std::pair<int, int> > >; std::vector<_Tp, _Alloc>::value_type = std::vector<std::pair<int, int> >]
+       push_back(value_type&& __x)
+       ^
+/usr/include/c++/4.9/bits/stl_vector.h:931:7: note:   candidate expects 1 argument, 0 provided
+file_handler.cc:70:25: error: no matching function for call to ‘std::vector<std::vector<std::pair<int, int> > >::push_back()’
+    evolutions.push_back();
+                         ^
+file_handler.cc:70:25: note: candidates are:
+In file included from /usr/include/c++/4.9/vector:64:0,
+                 from ../../MyLibraries/Params/Parameters.h:10,
+                 from file_handler.h:7,
+                 from file_handler.cc:1:
+/usr/include/c++/4.9/bits/stl_vector.h:913:7: note: void std::vector<_Tp, _Alloc>::push_back(const value_type&) [with _Tp = std::vector<std::pair<int, int> >; _Alloc = std::allocator<std::vector<std::pair<int, int> > >; std::vector<_Tp, _Alloc>::value_type = std::vector<std::pair<int, int> >]
+       push_back(const value_type& __x)
+       ^
+/usr/include/c++/4.9/bits/stl_vector.h:913:7: note:   candidate expects 1 argument, 0 provided
+/usr/include/c++/4.9/bits/stl_vector.h:931:7: note: void std::vector<_Tp, _Alloc>::push_back(std::vector<_Tp, _Alloc>::value_type&&) [with _Tp = std::vector<std::pair<int, int> >; _Alloc = std::allocator<std::vector<std::pair<int, int> > >; std::vector<_Tp, _Alloc>::value_type = std::vector<std::pair<int, int> >]
+       push_back(value_type&& __x)
+       ^
+/usr/include/c++/4.9/bits/stl_vector.h:931:7: note:   candidate expects 1 argument, 0 provided
+make: *** [val_evo] Error 1

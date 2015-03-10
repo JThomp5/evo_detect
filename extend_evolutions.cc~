@@ -1,0 +1,152 @@
+#include <iostream>
+#include "../MyLibraries/Params/Parameters.h"
+#include "../MyLibraries/Files/IOX.h"
+#include <map>
+#include <cmath>
+
+#include <tr1/memory>
+
+using namespace std;
+
+typedef vector < string > Community;
+typedef vector < Community > Evolution;
+
+map < string, int > get_counts ( Evolution e ){
+  map < string, int > result;
+  map < string, int >::iterator it_r;
+
+  for ( int i = 0; i < e.size(); i++ ){
+    for ( int j = 0; j < e[i].size(); j++ ){
+      if ( (it_r = result.find ( e[i][j] ) ) != result.end() ){
+	it_r->second++;
+      } else {
+	result.insert ( pair < string, int > ( e[i][j], 1 ) );
+      }
+    }
+  }
+
+  return result;
+}
+
+void Print ( Community c ){
+  for ( int i = 0; i < c.size(); i++ ){
+    cout << c[i] << " ";
+  }
+  cout << endl;
+}
+
+void Print ( Evolution e ){
+  for ( int i = 0; i < e.size(); i++ ){
+    Print ( e[i] );
+  }
+}
+
+double M ( const map < string, int >& A, const map < string, int >& B ){
+  map<string, int>::const_iterator it_a, it_b;
+  double numerator = 0.0;
+  double denominator = 0.0, bdenom = 0.0;
+
+  for ( it_a = A.begin(); it_a != A.end(); it_a++ ) {
+    denominator += (it_a->second) * (it_a->second);
+    
+    if ( ( it_b = B.find ( it_a->first ) ) != B.end() ){
+      numerator += ( it_a->second * it_b->second );
+    }
+  }
+
+  for ( it_b = B.begin(); it_b != B.end(); it_b++ ) {
+    bdenom += ( it_b->second * it_b->second );
+  }
+
+  return ( numerator / ( sqrt ( denominator ) * sqrt ( bdenom ) ) );
+}
+
+typedef pair < int, int > id;
+
+int main ( int argc, char** argv ) {
+  shared_ptr < Parameters > P ( new Parameters ( ) );
+  P->Read( argc, argv );
+  double threshold = P->get < double > ( "thr", 0.2 );
+  vector < vector < Evolution > > starts, ends;
+
+  ifstream fin;
+  openFileHarsh ( &fin, P->get < string > ( "i", "detected_evolutions.dat" ) );
+  
+  vector < string > fields;
+  int current_window = 0;
+  
+  map < id, id > finish_to_start;
+
+  while ( fline_tr ( &fin, &fields, " " ) ){
+    if ( fields[0].compare ( "Timestep" ) == 0 ){
+      starts.push_back ( vector < Evolution > () );
+      continue;
+    } else if ( ( fields.size() == 1 ) && ( fields[0][0] != '-' ) ) {
+      continue;
+    }
+
+    Evolution next_evo;
+    do {
+      next_evo.push_back( fields );
+    } while ( ( fline_tr ( &fin, &fields, " " ) ) && ( fields.size() > 1 ) && ( fields[0][0] != '-' ) );
+
+    if ( next_evo.size() > 0 ){
+      starts[starts.size() - 1].push_back ( next_evo );
+      if ( ends.size() < starts.size() - 1 + next_evo.size() ){
+	ends.resize ( starts.size() - 1 + next_evo.size() );
+      }
+      ends[starts.size() - 1 + next_evo.size() - 1].push_back ( next_evo );
+      
+      finish_to_start.insert ( pair < id, id > ( id ( starts.size() - 1 + next_evo.size() - 1, ends[starts.size() - 1 + next_evo.size() - 1].size() - 1 ), id ( starts.size() - 1, starts[starts.size() - 1].size() - 1 ) ) );
+    }
+  }
+  fin.close();
+ 
+  unsigned int extensions = 0;
+  map < id, id > matches;
+  for ( int i = ends.size() - 1; i >= 0; --i ){
+    if ( ( i + 1 < starts.size() ) && ( starts[i+1].size() > 0 ) ){
+      //Calculate M values and match
+      vector < map < string, int > > start_counts;
+      for ( int k = 0; k < starts[i+1].size(); k++ ){
+	start_counts.push_back ( get_counts ( starts[i+1][k] ) );
+      }
+      
+      for ( int k = 0; k < ends[i].size(); k++ ){
+	map < string, int > end_evo = get_counts ( ends[i][k] );
+	
+	double best_m = -1.0;
+	int best_match = -1.0;
+	for ( int t = 0; t < start_counts.size(); t++ ){
+	  double this_m = M ( start_counts[t], end_evo );
+	  if ( this_m>best_m ){
+	    best_m = this_m;
+	    best_match = t;
+	  }
+	}
+	
+	extensions++;
+	if ( best_m > threshold ){
+	  matches.insert ( pair < id, id > ( finish_to_start.find( id ( i, k ) )->second, id ( i+1, best_match ) ) );
+	}
+      }
+    }
+  }
+
+  set < id > seen;
+  for ( int i = 0; i < starts.size(); i++ ){
+    cout << "Timestep " << i << endl;
+    for ( int j = 0; j < starts[i].size(); j++ ){
+      id current_id = id ( i, j );
+      while ( seen.find ( current_id ) == seen.end() ){
+	seen.insert ( current_id );
+	Print ( starts[i][j] );
+	
+	if ( matches.find ( current_id ) != matches.end() ){
+	  current_id = matches.find ( current_id )->second;
+	}
+      }
+      cout << "----------" << endl;
+    }
+  }
+}

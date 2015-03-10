@@ -1,0 +1,108 @@
+#include <iostream>
+#include <string>
+#include <set>
+#include <vector>
+#include "iset.h"
+
+#include <tr1/memory>
+
+#include "../../MyLibraries/Params/Parameters.h"
+#include "../../MyLibraries/Files/IOX.h"
+#include "../../MyLibraries/Files/StringEx.h"
+
+#include "file_handler.h"
+
+using namespace std;
+
+
+int main ( int argc, char** argv ){
+  shared_ptr < Parameters > P ( new Parameters() );
+  P->Read ( argc, argv );
+  
+  double community_matching_threshold = 0.5;
+  double evolution_matching_threshold = 0.5;
+
+  //Read in the ground truth evolutions
+  cerr << "Reading in ground truths" << endl;
+  vector < unique_ptr < iset <str_com> > > ground_truth;
+  multimap < cid, cid > gt_evolutions;
+  ifstream grin;
+  openFileHarsh ( &grin, P->get < string > ( "gtc", "ground_truth_communities.dat" ) );
+  vector < string > fields;
+  while ( fline_tr ( &grin, &fields, " " ) ){
+    for ( unsigned int i = 0; i < fields.size(); i++ ){
+      ground_truth.push_back ( load_ground_truth_com_file ( fields[i] ) );
+    }
+  }
+
+  grin.close();
+
+  openFileHarsh ( &grin, P->get < string > ( "gte", "ground_truth_evolutions.dat") );
+  
+  int time_window = 0;
+  while ( fline_tr ( &grin, &fields, " " ) ){
+    for ( unsigned int i = 0; i < fields.size(); i++ ){
+      load_ground_truth_evo_file ( fields[i] , time_window++, gt_evolutions );
+    }
+  }
+
+  vector < vector < cid > > full_gt_evo;
+
+  for ( unsigned int i = 0; i < ground_truth.size(); i++ ){
+    map < int, set < str_com >::iterator >::const_iterator it_m;
+    for (it_m = ground_truth[i]->istart(); it_m != ground_truth[i]->iend(); it_m++ ){
+      if ( it_m->second->seen == false ){
+	vector < vector < cid > > to_add = getPaths ( it_m->first, i, ground_truth, gt_evolutions );
+        full_gt_evo.insert ( full_gt_evo.end(), to_add.begin(), to_add.end() );
+      }
+    }
+  }
+
+  /*for ( unsigned int i = 0; i < full_gt_evo.size(); i++ ){
+    for ( unsigned int j = 0; j < full_gt_evo[i].size(); j++ ){
+      cid p = full_gt_evo[i][j];
+      cout << "(" << p.first << ", " << p.second << ") ";
+    }
+    cout << endl;
+    }*/
+
+  //Read in the detected evolutions
+  //     Probably need a different function for each algorithm
+  cerr << "Reading in detected structure" << endl;
+  vector < unique_ptr < iset < str_com > > > detected;
+  vector < vector < cid > > det_evo;
+  detected = load_rpi_evo_file (P->get < string > ( "devo", "detected_evolutions.dat" ), det_evo );
+
+  map < cid, map < cid, double > > community_similarities = compare_community_structures ( ground_truth, detected );
+
+  set < int > detected_matched;
+  double evolutions_detected_correctly = 0.0;
+
+  cerr << "Comparing Evolutions: " << full_gt_evo.size() << " by " << det_evo.size() <<  " total" << endl;
+  for ( unsigned int i = 0; i < full_gt_evo.size(); i++ ){
+    if ( i % 10 == 0 )
+      cerr << endl << ".";
+    double best_similarity = -1.0;
+    int best_match = -1;
+    
+    for ( unsigned int j = 0; j < det_evo.size(); j++ ){
+      if ( j % (det_evo.size() / 10) == 0 )
+	cerr << "= ";
+      double current_similarity = Evo_Jaccard ( full_gt_evo[i], det_evo[j], community_similarities, community_matching_threshold ); 
+      if ( current_similarity > best_similarity ){
+	best_similarity = current_similarity;
+	best_match = j;
+      }
+    }
+    
+    detected_matched.insert ( best_match );
+    if ( best_similarity > evolution_matching_threshold ){
+      evolutions_detected_correctly++;
+    }
+  }
+
+  cout << "True Positives: " << evolutions_detected_correctly  << endl;
+  cout << "False Positives: " << det_evo.size() - evolutions_detected_correctly << endl;
+  cout << "False Negatives: " << full_gt_evo.size() - evolutions_detected_correctly << endl;
+  
+}
