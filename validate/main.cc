@@ -1,3 +1,7 @@
+//gtc - ground truth communities
+//gte - evolutions
+//devo - detected evolutions
+
 #include <iostream>
 #include <string>
 #include <set>
@@ -6,9 +10,9 @@
 
 #include <tr1/memory>
 
-#include "../../MyLibraries/Params/Parameters.h"
-#include "../../MyLibraries/Files/IOX.h"
-#include "../../MyLibraries/Files/StringEx.h"
+#include "../../Libraries/Params/Parameters.h"
+#include "../../Libraries/Files/IOX.h"
+#include "../../Libraries/Files/StringEx.h"
 
 #include "file_handler.h"
 
@@ -21,6 +25,8 @@ int main ( int argc, char** argv ){
   
   double community_matching_threshold = 0.5;
   double evolution_matching_threshold = 0.5;
+
+  
 
   //Read in the ground truth evolutions
   cerr << "Reading in ground truths" << endl;
@@ -125,5 +131,11 @@ int main ( int argc, char** argv ){
   cout << "True Positives: " << matches.size() << endl;
   cout << "False Positives: " << det_evo.size() - det_matched.size() << endl;
   cout << "False Negatives: " << full_gt_evo.size() - matches.size() << endl;
-  
+
+  cout << "Similarity measures: ";
+  for ( it_mm = matches.begin(); it_mm != matches.end(); it_mm++ ){
+    cout << it_mm->second.second << " ";
+  }
+  cout << endl;
+
 }

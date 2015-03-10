@@ -4,9 +4,9 @@
 #include "iset.h"
 #include <tr1/memory>
 
-#include "../../MyLibraries/Params/Parameters.h"
-#include "../../MyLibraries/Files/IOX.h"
-#include "../../MyLibraries/Files/StringEx.h"
+#include "../../Libraries/Params/Parameters.h"
+#include "../../Libraries/Files/IOX.h"
+#include "../../Libraries/Files/StringEx.h"
 
 unique_ptr < iset <str_com> > load_ground_truth_com_file ( const string& filename );
 void load_ground_truth_evo_file ( const string& filename, int window, multimap < cid, cid >& evolutions );

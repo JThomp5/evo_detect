@@ -1,5 +1,5 @@
-#include "../MyLibraries/Files/IOX.h"
-#include "../MyLibraries/Params/Parameters.h"
+#include "../Libraries/Files/IOX.h"
+#include "../Libraries/Params/Parameters.h"
 #include <set>
 #include <map>
 #include <vector>
@@ -145,6 +145,75 @@ double Jaccard ( const Community& A, const Community& B ){
   }
 
   return same / total;
+}
+
+double Jaccard_Naive_Unknown ( const Community& A, const Community& B ){
+  double same = 0.0;
+  double total = 0.0;
+  double unknown = 0.0;
+  
+  Community::const_iterator it_a, it_b;
+  
+  for ( it_a = A.begin(); it_a != A.end(); it_a++ ){
+    if ( ( (*it_a)[0] == 'U' ) || ( (*it_a)[0] == 'u' ) ){
+      ++total;
+      ++unknown;
+    } else {
+      if ( B.find ( *it_a ) != B.end() ){
+	++same;
+      }
+      
+      ++total;
+    }
+  }
+
+  for ( it_b = B.begin(); it_b != B.end(); it_b++ ){
+    if ( ( (*it_b)[0] == 'U' ) || ( (*it_b)[0] == 'u' ) ){
+      ++total;
+      ++unknown;
+    } else {
+      if ( A.find ( *it_b ) == A.end() ){
+	++total;
+      }
+    }
+  }
+
+  return same / total;
+}
+
+double Jaccard_Naive_Probabilistic_Unknown ( const Community& A, const Community& B, const double& num_unk ){
+  double same = 0.0;
+  double total = 0.0;
+  double unknown_a = 0.0;
+  double unknown_b = 0.0;
+  
+  Community::const_iterator it_a, it_b;
+  
+  for ( it_a = A.begin(); it_a != A.end(); it_a++ ){
+    if ( ( (*it_a)[0] == 'U' ) || ( (*it_a)[0] == 'u' ) ){
+      ++total;
+      ++unknown_a;
+    } else {
+      if ( B.find ( *it_a ) != B.end() ){
+	++same;
+      }
+      
+      ++total;
+    }
+  }
+
+  for ( it_b = B.begin(); it_b != B.end(); it_b++ ){
+    if ( ( (*it_b)[0] == 'U' ) || ( (*it_b)[0] == 'u' ) ){
+      ++total;
+      ++unknown_b;
+    } else {
+      if ( A.find ( *it_b ) == A.end() ){
+	++total;
+      }
+    }
+  }
+
+  return ( same + ( (unknown_a * unknown_b) / num_unk) ) / total;
 }
 
 double MinNorm ( const Community& A, const Community& B){
