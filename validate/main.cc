@@ -26,8 +26,6 @@ int main ( int argc, char** argv ){
   double community_matching_threshold = 0.5;
   double evolution_matching_threshold = 0.5;
 
-  
-
   //Read in the ground truth evolutions
   cerr << "Reading in ground truths" << endl;
   vector < unique_ptr < iset <str_com> > > ground_truth;
@@ -102,8 +100,16 @@ int main ( int argc, char** argv ){
       }
     }
   }
+
+  set < cid >::iterator it_ep;
+  unsigned int icount = 0;
+  for ( it_ep = evo_pairs.begin(); it_ep != evo_pairs.end(); it_ep++ ){
+    if ( ++icount == 25 )
+      break;
+    cout << it_ep->first << " " << it_ep->second << endl;
+  }
   
-  cerr << "Matching " << evo_pairs.size() << endl;
+  cerr << "Matching " << evo_pairs.size() <<  " (" << detected.size() * ground_truth.size() << endl;
   set < cid >::iterator it_sc;
   map < int, pair < int, double > > matches;
   map < int, pair < int, double > >::iterator it_mm;
@@ -131,11 +137,4 @@ int main ( int argc, char** argv ){
   cout << "True Positives: " << matches.size() << endl;
   cout << "False Positives: " << det_evo.size() - det_matched.size() << endl;
   cout << "False Negatives: " << full_gt_evo.size() - matches.size() << endl;
-
-  cout << "Similarity measures: ";
-  for ( it_mm = matches.begin(); it_mm != matches.end(); it_mm++ ){
-    cout << it_mm->second.second << " ";
-  }
-  cout << endl;
-
 }

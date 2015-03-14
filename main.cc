@@ -11,13 +11,17 @@ typedef set < string > Community;
 typedef map < string, vector < int > > Membership; //Vertex to indices of communities it's a member of
 
 void read_file ( const string& filename, vector < Community >& structure, Membership& membership_structure );
-double Jaccard ( const Community& A, const Community& B );
+double Jaccard ( const Community& A, const Community& B, const double& num_unk = 0 );
+double Jaccard_Naive_Unknown ( const Community& A, const Community& B, const double& num_unk = 0 );
+double Jaccard_Naive_Probabilistic_Unknown ( const Community& A, const Community& B, const double& num_unk );
+double Jaccard_Naive_Static_Probabilistic_Unknown ( const Community& A, const Community& B, const double& num_unk );
+
 double MinNorm ( const Community& A, const Community& B);
 
 void Print ( const Membership& M );
 void Print ( const Community& C );
- 
-void calculate_valid_steps ( const vector < vector < Community > >& C, const vector < Membership >& M, vector < vector < int > >& steps, double threshold = 0.15, double (*compare_fnc) ( const Community& A, const Community& B ) = &Jaccard );
+
+void calculate_valid_steps ( const vector < vector < Community > >& C, const vector < Membership >& M, vector < vector < int > >& steps, double threshold = 0.15, double (*compare_fnc) ( const Community& A, const Community& B, const double& num_unk ) = &Jaccard_Naive_Unknown, const double& num_unk = 0 );
 
 tuple<int, int> int_tuple ( int a, int b ){
   if ( a < b ){
@@ -130,7 +134,7 @@ void read_file ( const string& filename, vector < Community >& structure, Member
   fin.close();
 }
 
-double Jaccard ( const Community& A, const Community& B ){
+double Jaccard ( const Community& A, const Community& B, const double& num_unk ){
   double same = 0.0;
   double total = 0.0;
 
@@ -147,7 +151,8 @@ double Jaccard ( const Community& A, const Community& B ){
   return same / total;
 }
 
-double Jaccard_Naive_Unknown ( const Community& A, const Community& B ){
+double Jaccard_Naive_Unknown ( const Community& A, const Community& B, const double& num_unk ){
+  //static int call_count = 0;
   double same = 0.0;
   double total = 0.0;
   double unknown = 0.0;
@@ -177,7 +182,15 @@ double Jaccard_Naive_Unknown ( const Community& A, const Community& B ){
       }
     }
   }
-
+  
+  /**cout << "Unknown: " << unknown << endl;
+  cout << "Same: " << same << endl;
+  cout << "Total " << total << endl;
+  cout << "Normal Jaccard : " << Jaccard ( A, B, num_unk ) << endl;
+  cout << "Naive Unknown Jaccard : " << same / total << endl;
+  cout << "=======================" << endl;
+  if ( ++call_count == 10 )
+  exit ( 10 );**/
   return same / total;
 }
 
@@ -216,6 +229,52 @@ double Jaccard_Naive_Probabilistic_Unknown ( const Community& A, const Community
   return ( same + ( (unknown_a * unknown_b) / num_unk) ) / total;
 }
 
+double Jaccard_Naive_Static_Probabilistic_Unknown ( const Community& A, const Community& B, const double& num_unk ){
+  double same = 0.0;
+  double total = 0.0;
+  double unknown_a = 0.0;
+  double unknown_b = 0.0;
+  
+  Community::const_iterator it_a, it_b;
+  
+  for ( it_a = A.begin(); it_a != A.end(); it_a++ ){
+    if ( ( (*it_a)[0] == 'U' ) || ( (*it_a)[0] == 'u' ) ){
+      ++total;
+      ++unknown_a;
+    } else {
+      if ( B.find ( *it_a ) != B.end() ){
+	++same;
+      }
+      
+      ++total;
+    }
+  }
+
+  for ( it_b = B.begin(); it_b != B.end(); it_b++ ){
+    if ( ( (*it_b)[0] == 'U' ) || ( (*it_b)[0] == 'u' ) ){
+      ++total;
+      ++unknown_b;
+    } else {
+      if ( A.find ( *it_b ) == A.end() ){
+	++total;
+      }
+    }
+  }
+
+  int random_matches = 0;
+  for ( int i = 0; i < unknown_a; i++ ){
+    for ( int j = 0; j < unknown_b; j++ ){
+      if ( random_double() < 0.1 ){
+	++random_matches;
+	--unknown_b;
+	break;
+      }
+    }
+  }
+
+  return ( same + random_matches ) / total;
+}
+
 double MinNorm ( const Community& A, const Community& B){
   return 1;
 }
@@ -232,7 +291,7 @@ int path_length ( const int start_window, const int start_com, const vector < ve
   return len;
 }
 
-void calculate_valid_steps ( const vector < vector < Community > >& C, const vector < Membership >& M, vector < vector < int > >& steps, double threshold, double (*compare_fnc) ( const Community& A, const Community& B ) ) {
+void calculate_valid_steps ( const vector < vector < Community > >& C, const vector < Membership >& M, vector < vector < int > >& steps, double threshold, double (*compare_fnc) ( const Community& A, const Community& B, const double& num_unk ), const double& num_unk ) {
   steps.clear();
   for ( int i = 0; i < C.size(); i++ ){
     vector < int > init ( C[i].size(), -1 );
@@ -261,7 +320,7 @@ void calculate_valid_steps ( const vector < vector < Community > >& C, const vec
       int best_target = -1;      
       double best_value = -1.0, next_value;
       while ( ( it_t != matches.end() ) && ( get < 0 > ( *it_t ) == current_base ) ){
-	if ( ( ( next_value = compare_fnc ( C[i][get<0>(*it_t)], C[i+1][get<1>(*it_t)] ) ) >= best_value ) && ( next_value > threshold ) ) {
+	if ( ( ( next_value = compare_fnc ( C[i][get<0>(*it_t)], C[i+1][get<1>(*it_t)], num_unk ) ) >= best_value ) && ( next_value > threshold ) ) {
 	  if ( next_value == best_value ){
 	    if ( path_length ( i+1, best_target, steps ) < path_length ( i+1, get < 1 > (*it_t), steps ) ) {
 	      best_value = next_value;

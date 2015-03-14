@@ -1,6 +1,6 @@
 #include <iostream>
-#include "../MyLibraries/Params/Parameters.h"
-#include "../MyLibraries/Files/IOX.h"
+#include "../Libraries/Params/Parameters.h"
+#include "../Libraries/Files/IOX.h"
 #include <map>
 #include <cmath>
 
